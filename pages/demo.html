@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Demo — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    body { background: var(--bg); }
+
+    .barb-header {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 20px 20px;
+      text-align: center;
+      position: relative;
+    }
+    .demo-badge {
+      position: absolute; top: 12px; right: 12px;
+      background: var(--gold); color: #0c0c0c;
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 999px; letter-spacing: 0.06em;
+    }
+    .barb-header__nome { font-size: 36px; margin-bottom: 4px; }
+    .barb-header__info { color: var(--text-2); font-size: 13px; }
+    .barb-header__bv { color: var(--text-2); font-size: 14px; margin-top: 8px; }
+
+    .stepper-wrap { padding: 20px 20px 0; max-width: 480px; margin: 0 auto; }
+
+    .step-panel { display: none; padding: 20px; max-width: 480px; margin: 0 auto; }
+    .step-panel.active { display: block; animation: pageIn 0.3s ease; }
+    .step-title { font-size: 28px; margin-bottom: 6px; }
+    .step-subtitle { color: var(--text-2); font-size: 14px; margin-bottom: 20px; }
+
+    .servicos-grid { display: flex; flex-direction: column; gap: 10px; }
+    .servico-item {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px; cursor: pointer;
+      transition: all 0.2s; user-select: none;
+    }
+    .servico-item.selected { border-color: var(--gold); background: var(--gold-dim); }
+    .servico-item__icon { font-size: 24px; flex-shrink: 0; }
+    .servico-item__info { flex: 1; }
+    .servico-item__nome { font-weight: 600; margin-bottom: 2px; }
+    .servico-item__meta { font-size: 13px; color: var(--text-2); }
+    .servico-item__check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+    .servico-item.selected .servico-item__check { background: var(--gold); border-color: var(--gold); color: #0c0c0c; }
+
+    .resumo-bar {
+      position: sticky; bottom: 0; background: var(--surface);
+      border-top: 1px solid var(--border); padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .resumo-bar__info { flex: 1; }
+    .resumo-bar__count { font-size: 12px; color: var(--text-2); }
+    .resumo-bar__total { font-size: 20px; font-weight: 700; color: var(--gold); }
+    .resumo-bar__duracao { font-size: 12px; color: var(--muted); }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; }
+    .cal-day-name { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 0; }
+    .cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm); font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; border: 1.5px solid transparent;
+    }
+    .cal-day:hover:not(.disabled):not(.selected) { border-color: var(--gold); }
+    .cal-day.selected { background: var(--gold); color: #0c0c0c; font-weight: 700; }
+    .cal-day.today { border-color: var(--gold); color: var(--gold); }
+    .cal-day.today.selected { color: #0c0c0c; }
+    .cal-day.disabled { color: var(--muted); cursor: not-allowed; opacity: 0.4; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .cal-nav__title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.04em; }
+    .cal-nav__btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
+    .cal-nav__btn:hover { border-color: var(--gold); }
+
+    .slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .slot-btn {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 4px;
+      text-align: center; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .slot-btn:hover { border-color: var(--gold); background: var(--gold-dim); }
+    .slot-btn.selected { background: var(--gold); color: #0c0c0c; border-color: var(--gold); }
+
+    .confirm-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    }
+    .confirm-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .confirm-row:last-child { border-bottom: none; }
+    .confirm-row__label { color: var(--text-2); font-size: 13px; flex-shrink: 0; }
+    .confirm-row__val { font-weight: 600; font-size: 14px; text-align: right; }
+    .confirm-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 4px; }
+    .confirm-total__val { font-size: 26px; font-weight: 700; color: var(--gold); }
+
+    /* TELA DE SUCESSO DEMO */
+    .success-screen {
+      text-align: center; padding: 40px 20px;
+      max-width: 480px; margin: 0 auto;
+      display: none;
+    }
+    .success-screen.active { display: block; animation: pageIn 0.4s ease; }
+    .success-screen__icon { font-size: 72px; margin-bottom: 16px; }
+    .wpp-demo {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin: 20px 0;
+      text-align: left;
+    }
+    .wpp-demo__header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .wpp-demo__avatar { width: 40px; height: 40px; border-radius: 50%; background: #25d366; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .wpp-demo__name { font-weight: 600; font-size: 14px; }
+    .wpp-demo__sub { font-size: 12px; color: var(--text-2); }
+    .wpp-demo__bubble {
+      background: #1a3a1a; border-radius: 0 12px 12px 12px;
+      padding: 12px 14px; font-size: 13px; line-height: 1.7;
+      color: #e8f5e9; white-space: pre-line;
+    }
+    .wpp-demo__time { text-align: right; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER DA BARBEARIA DEMO -->
+<div class="barb-header">
+  <div class="demo-badge">✨ DEMO</div>
+  <div style="font-size:48px;margin-bottom:8px;">✂️</div>
+  <h1 class="barb-header__nome">Barbearia do Carlos</h1>
+  <div class="barb-header__info">📍 Rua das Flores, 123 — São Paulo</div>
+  <div class="barb-header__bv">Seja bem-vindo! Escolha seu serviço e horário preferido 😊</div>
+</div>
+
+<!-- STEPPER -->
+<div class="stepper-wrap">
+  <div class="steps">
+    <div class="step active" id="ind-1">
+      <div class="step__dot">1</div>
+      <span class="step__label">Serviços</span>
+    </div>
+    <div class="step" id="ind-2">
+      <div class="step__dot">2</div>
+      <span class="step__label">Data & Hora</span>
+    </div>
+    <div class="step" id="ind-3">
+      <div class="step__dot">3</div>
+      <span class="step__label">Confirmar</span>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 1: SERVIÇOS -->
+<div class="step-panel active" id="s1">
+  <h2 class="step-title">ESCOLHA O <span style="color:var(--gold)">SERVIÇO</span></h2>
+  <p class="step-subtitle">Selecione um ou mais serviços</p>
+  <div class="servicos-grid" id="servicosGrid"></div>
+</div>
+
+<!-- STEP 2: DATA E HORA -->
+<div class="step-panel" id="s2">
+  <h2 class="step-title">QUANDO <span style="color:var(--gold)">VOCÊ VEM?</span></h2>
+  <p class="step-subtitle">Escolha o dia e horário</p>
+  <div class="cal-nav">
+    <button class="cal-nav__btn" onclick="mudaMes(-1)">‹</button>
+    <span class="cal-nav__title" id="calTitle"></span>
+    <button class="cal-nav__btn" onclick="mudaMes(1)">›</button>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <hr class="divider" style="margin:20px 0 16px;">
+  <div id="slotsSection" style="display:none;">
+    <h3 style="font-size:18px;margin-bottom:12px;">Horários disponíveis</h3>
+    <div class="slots-grid" id="slotsGrid"></div>
+  </div>
+</div>
+
+<!-- STEP 3: CONFIRMAR -->
+<div class="step-panel" id="s3">
+  <h2 class="step-title">SEUS <span style="color:var(--gold)">DADOS</span></h2>
+  <p class="step-subtitle">Quase pronto! Confirme suas informações</p>
+  <div class="confirm-box" id="resumoBox"></div>
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="input-group">
+      <label>Seu nome</label>
+      <input id="cliNome" class="input" type="text" placeholder="João Silva"/>
+    </div>
+    <div class="input-group">
+      <label>Seu WhatsApp</label>
+      <input id="cliWpp" class="input" type="tel" placeholder="11999999999"/>
+    </div>
+    <button class="btn btn--primary btn--full" onclick="confirmar()">✅ Confirmar agendamento</button>
+  </div>
+</div>
+
+<!-- TELA DE SUCESSO -->
+<div class="success-screen" id="successScreen">
+  <div class="success-screen__icon">🎉</div>
+  <h2 style="font-size:48px;margin-bottom:8px;">TUDO <span style="color:var(--gold)">CERTO!</span></h2>
+  <p style="color:var(--text-2);margin-bottom:24px;">Veja como a mensagem chegaria no WhatsApp:</p>
+
+  <div class="wpp-demo">
+    <div class="wpp-demo__header">
+      <div class="wpp-demo__avatar">✂️</div>
+      <div>
+        <div class="wpp-demo__name">Barbearia do Carlos</div>
+        <div class="wpp-demo__sub">WhatsApp Business</div>
+      </div>
+    </div>
+    <div class="wpp-demo__bubble" id="wppMsgCliente"></div>
+    <div class="wpp-demo__time" id="wppTime"></div>
+  </div>
+
+  <div class="wpp-demo" style="margin-top:16px;">
+    <div class="wpp-demo__header">
+      <div class="wpp-demo__avatar" style="background:var(--gold);color:#0c0c0c;">👤</div>
+      <div>
+        <div class="wpp-demo__name">Mensagem para o barbeiro</div>
+        <div class="wpp-demo__sub">Notificação automática</div>
+      </div>
+    </div>
+    <div class="wpp-demo__bubble" id="wppMsgBarbeiro" style="background:#1a1a2e;color:#e8e8ff;border-radius:0 12px 12px 12px;"></div>
+  </div>
+
+  <div style="margin-top:28px;display:flex;flex-direction:column;gap:12px;">
+    <a href="../index.html" class="btn btn--primary btn--full">Quero para minha barbearia →</a>
+    <button class="btn btn--ghost btn--full" onclick="reiniciar()">← Testar novamente</button>
+  </div>
+</div>
+
+<!-- RESUMO BAR -->
+<div class="resumo-bar" id="resumoBar" style="display:none;">
+  <div class="resumo-bar__info">
+    <div class="resumo-bar__count" id="rbCount">0 serviços</div>
+    <div class="resumo-bar__total" id="rbTotal">R$ 0,00</div>
+    <div class="resumo-bar__duracao" id="rbDur">0 min</div>
+  </div>
+  <button class="btn btn--primary" onclick="proximoPasso()">Continuar →</button>
+</div>
+
+<script src="../js/supabase.js"></script>
+<script>
+  // DADOS FICTÍCIOS
+  const SERVICOS = [
+    { id: '1', emoji: '✂️', nome: 'Corte de cabelo', preco: 35, duracao_min: 30 },
+    { id: '2', emoji: '🪒', nome: 'Barba', preco: 25, duracao_min: 30 },
+    { id: '3', emoji: '💈', nome: 'Corte + Barba', preco: 55, duracao_min: 60 },
+    { id: '4', emoji: '✨', nome: 'Hidratação', preco: 40, duracao_min: 30 },
+  ];
+
+  // Slots ocupados fictícios por dia da semana (apenas para demo)
+  const OCUPADOS_DEMO = {
+    1: ['09:00','09:30','13:00','13:30'],
+    2: ['10:00','14:00','14:30'],
+    3: ['08:00','08:30','11:00'],
+    4: ['09:00','15:00','15:30'],
+    5: ['10:00','10:30','13:00'],
+    6: ['08:00','09:00','10:00'],
+  };
+
+  let selectedServicos = [];
+  let selectedDate = null;
+  let selectedSlot = null;
+  let currentStep = 1;
+  let calViewDate = new Date();
+
+  // ---- SERVIÇOS ----
+  function renderServicos() {
+    document.getElementById('servicosGrid').innerHTML = SERVICOS.map(s => `
+      <div class="servico-item" id="si_${s.id}" onclick="toggleServico('${s.id}')">
+        <div class="servico-item__icon">${s.emoji}</div>
+        <div class="servico-item__info">
+          <div class="servico-item__nome">${s.nome}</div>
+          <div class="servico-item__meta">${formatCurrency(s.preco)} · ${s.duracao_min} min</div>
+        </div>
+        <div class="servico-item__check" id="chk_${s.id}">✓</div>
+      </div>`).join('');
+  }
+
+  function toggleServico(id) {
+    const idx = selectedServicos.findIndex(s => s.id === id);
+    const item = document.getElementById(`si_${id}`);
+    if (idx >= 0) { selectedServicos.splice(idx, 1); item.classList.remove('selected'); }
+    else { selectedServicos.push(SERVICOS.find(s => s.id === id)); item.classList.add('selected'); }
+    atualizarResumoBar();
+  }
+
+  function atualizarResumoBar() {
+    const bar = document.getElementById('resumoBar');
+    if (selectedServicos.length === 0) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    const total = selectedServicos.reduce((a, s) => a + s.preco, 0);
+    const dur = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    document.getElementById('rbCount').textContent = `${selectedServicos.length} serviço(s)`;
+    document.getElementById('rbTotal').textContent = formatCurrency(total);
+    document.getElementById('rbDur').textContent = `⏱ ${dur} min`;
+  }
+
+  // ---- NAVEGAÇÃO ----
+  function goStep(n) {
+    document.getElementById(`s${currentStep}`).classList.remove('active');
+    document.getElementById(`ind-${currentStep}`).classList.remove('active');
+    document.getElementById(`ind-${currentStep}`).classList.add('done');
+    currentStep = n;
+    document.getElementById(`s${currentStep}`).classList.add('active');
+    document.getElementById(`ind-${currentStep}`).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (n === 3) { document.getElementById('resumoBar').style.display = 'none'; renderResumo(); }
+  }
+
+  function proximoPasso() {
+    if (currentStep === 1) {
+      if (selectedServicos.length === 0) return showToast('Selecione ao menos 1 serviço', 'error');
+      goStep(2);
+    } else if (currentStep === 2) {
+      if (!selectedDate) return showToast('Escolha um dia', 'error');
+      if (!selectedSlot) return showToast('Escolha um horário', 'error');
+      goStep(3);
+    }
+  }
+
+  // ---- CALENDÁRIO ----
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  function mudaMes(delta) {
+    calViewDate.setMonth(calViewDate.getMonth() + delta);
+    renderCalendario();
+  }
+
+  function renderCalendario() {
+    const y = calViewDate.getFullYear();
+    const m = calViewDate.getMonth();
+    document.getElementById('calTitle').textContent = `${MESES[m]} ${y}`;
+    const grid = document.getElementById('calGrid');
+    const nomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    let html = nomes.map(n => `<div class="cal-day-name">${n}</div>`).join('');
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const today = new Date(); today.setHours(0,0,0,0);
+    for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(y, m, d);
+      const dateStr = date.toISOString().split('T')[0];
+      const diaSemana = date.getDay();
+      const passado = date < today;
+      const domingo = diaSemana === 0;
+      const disabled = passado || domingo;
+      const isToday = date.getTime() === today.getTime();
+      const isSel = selectedDate === dateStr;
+      html += `<div class="cal-day ${disabled?'disabled':''} ${isToday?'today':''} ${isSel?'selected':''}"
+        onclick="${disabled?'':`selecionarDia('${dateStr}', ${diaSemana})`}">${d}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  function selecionarDia(dateStr, diaSemana) {
+    selectedDate = dateStr;
+    selectedSlot = null;
+    renderCalendario();
+    renderSlots(diaSemana);
+    document.getElementById('slotsSection').style.display = 'block';
+  }
+
+  function renderSlots(diaSemana) {
+    const ocupados = new Set(OCUPADOS_DEMO[diaSemana] || []);
+    const dur = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    const slotsNecessarios = Math.ceil(dur / 30);
+    const slots = [];
+    for (let t = 8*60; t + slotsNecessarios*30 <= 18*60; t += 30) {
+      let livre = true;
+      for (let i = 0; i < slotsNecessarios; i++) {
+        const hh = String(Math.floor((t+i*30)/60)).padStart(2,'0');
+        const mm = String((t+i*30)%60).padStart(2,'0');
+        if (ocupados.has(`${hh}:${mm}`)) { livre = false; break; }
+      }
+      if (livre) slots.push(t);
+    }
+    document.getElementById('slotsGrid').innerHTML = slots.map(t => {
+      const hh = String(Math.floor(t/60)).padStart(2,'0');
+      const mm = String(t%60).padStart(2,'0');
+      const slotStr = `${hh}:${mm}`;
+      return `<div class="slot-btn ${selectedSlot===slotStr?'selected':''}" onclick="selecionarSlot('${slotStr}',this)">${slotStr}</div>`;
+    }).join('');
+  }
+
+  function selecionarSlot(slot, el) {
+    selectedSlot = slot;
+    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // ---- RESUMO ----
+  function renderResumo() {
+    const total = selectedServicos.reduce((a, s) => a + s.preco, 0);
+    const dur = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    const [hh, mm] = selectedSlot.split(':').map(Number);
+    const fimDate = new Date(2000, 0, 1, hh, mm + dur);
+    const fim = `${String(fimDate.getHours()).padStart(2,'0')}:${String(fimDate.getMinutes()).padStart(2,'0')}`;
+    const [y, m, d] = selectedDate.split('-');
+    document.getElementById('resumoBox').innerHTML = `
+      <div class="confirm-row"><span class="confirm-row__label">Serviço(s)</span><span class="confirm-row__val">${selectedServicos.map(s=>s.nome).join(' + ')}</span></div>
+      <div class="confirm-row"><span class="confirm-row__label">Data</span><span class="confirm-row__val">${d}/${m}/${y}</span></div>
+      <div class="confirm-row"><span class="confirm-row__label">Horário</span><span class="confirm-row__val">${selectedSlot} → ${fim}</span></div>
+      <div class="confirm-total"><span style="color:var(--text-2);font-size:14px;">💰 Total</span><span class="confirm-total__val">${formatCurrency(total)}</span></div>`;
+  }
+
+  // ---- CONFIRMAR ----
+  function confirmar() {
+    const nome = document.getElementById('cliNome').value.trim();
+    const wpp = document.getElementById('cliWpp').value.trim();
+    if (!nome || !wpp) return showToast('Preencha seu nome e WhatsApp', 'error');
+
+    const total = selectedServicos.reduce((a, s) => a + s.preco, 0);
+    const dur = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    const [hh, mm] = selectedSlot.split(':').map(Number);
+    const fimDate = new Date(2000, 0, 1, hh, mm + dur);
+    const fim = `${String(fimDate.getHours()).padStart(2,'0')}:${String(fimDate.getMinutes()).padStart(2,'0')}`;
+    const [y, m, d] = selectedDate.split('-');
+    const servNomes = selectedServicos.map(s => s.nome).join(' + ');
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    document.getElementById('wppMsgCliente').textContent =
+`Olá, ${nome}! 😊 Seu agendamento está confirmado!
+✂️ ${servNomes}
+📆 ${d}/${m}/${y} às ${selectedSlot} → ${fim}
+📍 Barbearia do Carlos
+   Rua das Flores, 123 — São Paulo
+💰 Total: ${formatCurrency(total)}
+Qualquer dúvida, fala com a gente! 👋`;
+
+    document.getElementById('wppMsgBarbeiro').textContent =
+`📅 Novo agendamento!
+👤 ${nome}
+📱 ${wpp}
+✂️ ${servNomes}
+📆 ${d}/${m}/${y} às ${selectedSlot} → ${fim}
+💰 ${formatCurrency(total)}`;
+
+    document.getElementById('wppTime').textContent = timeStr;
+
+    // Esconde tudo e mostra sucesso
+    document.getElementById(`s${currentStep}`).classList.remove('active');
+    document.getElementById('resumoBar').style.display = 'none';
+    document.querySelector('.stepper-wrap').style.display = 'none';
+    document.getElementById('successScreen').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function reiniciar() {
+    selectedServicos = [];
+    selectedDate = null;
+    selectedSlot = null;
+    currentStep = 1;
+    document.getElementById('successScreen').classList.remove('active');
+    document.querySelector('.stepper-wrap').style.display = 'block';
+    document.getElementById('s1').classList.add('active');
+    document.querySelectorAll('.step').forEach((s,i) => {
+      s.classList.remove('active','done');
+      if (i === 0) s.classList.add('active');
+    });
+    document.querySelectorAll('.servico-item').forEach(el => el.classList.remove('selected'));
+    document.getElementById('cliNome').value = '';
+    document.getElementById('cliWpp').value = '';
+    document.getElementById('resumoBar').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // INIT
+  renderServicos();
+  renderCalendario();
+</script>
+</body>
+</html>
