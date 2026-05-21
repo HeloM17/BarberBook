@@ -59,6 +59,6 @@ online 24h, sem depender do barbeiro estar disponível.
 - 100% responsivo, funciona no celular sem instalar nada
 
 ## Contato
-Desenvolvido por HeloM17 
-Linkedin - https://www.linkedin.com/in/heloisa-coutinho-522316239?utm_source=share_via&utm_content=profile&utm_medium=member_android
+- Desenvolvido por HeloM17 
+- Linkedin - https://www.linkedin.com/in/heloisa-coutinho-522316239?utm_source=share_via&utm_content=profile&utm_medium=member_android
 
