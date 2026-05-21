@@ -73,7 +73,8 @@
       return;
     }
     // Busca dados da barbearia
-    const { data: barb } = await sb.from('barbearias').select('slug, nome').eq('user_id', data.user.id).single();
+    const { data: barbList } = await sb.from('barbearias').select('slug, nome').eq('user_id', data.user.id);
+    const barb = barbList && barbList.length > 0 ? barbList[0] : null;
     if (barb) {
       localStorage.setItem('bb_slug', barb.slug);
       localStorage.setItem('bb_nome', barb.nome);
