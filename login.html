@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Entrar — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .auth-page { min-height: 100vh; display: flex; flex-direction: column; }
+    .auth-center { flex:1; display:flex; align-items:center; justify-content:center; padding:40px 24px; }
+    .auth-box { width:100%; max-width:400px; }
+    .auth-logo { text-align:center; margin-bottom:32px; }
+    .auth-logo h1 { font-size:48px; color:var(--text); }
+    .auth-logo h1 span { color:var(--gold); }
+    .auth-logo p { color:var(--text-2); font-size:14px; margin-top:4px; }
+    .auth-form { display:flex; flex-direction:column; gap:18px; }
+    .auth-footer { text-align:center; margin-top:20px; font-size:14px; color:var(--text-2); }
+  </style>
+</head>
+<body class="auth-page">
+<nav class="navbar">
+  <a href="../index.html" class="navbar__logo">Barber<span>Book</span></a>
+  <a href="cadastro.html" class="btn btn--primary btn--sm">Criar conta</a>
+</nav>
+
+<div class="auth-center">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <h1>BARBER<span>BOOK</span></h1>
+      <p>Painel da barbearia</p>
+    </div>
+    <div class="card">
+      <div class="auth-form">
+        <div class="input-group">
+          <label for="email">E-mail</label>
+          <input id="email" class="input" type="email" placeholder="seu@email.com" autocomplete="email"/>
+        </div>
+        <div class="input-group">
+          <label for="senha">Senha</label>
+          <input id="senha" class="input" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <button class="btn btn--primary btn--full" id="btnLogin" onclick="login()">Entrar →</button>
+      </div>
+      <div class="auth-footer">
+        Não tem conta? <a href="cadastro.html">Cadastrar grátis</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script>
+  // Se já logado, redireciona
+  sb.auth.getSession().then(({ data }) => {
+    if (data.session) window.location.href = 'painel.html';
+  });
+
+  async function login() {
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    if (!email || !senha) return showToast('Preencha e-mail e senha', 'error');
+
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Entrando...';
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+    if (error) {
+      showToast('E-mail ou senha incorretos', 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Entrar →';
+      return;
+    }
+    // Busca dados da barbearia
+    const { data: barb } = await sb.from('barbearias').select('slug, nome').eq('user_id', data.user.id).single();
+    if (barb) {
+      localStorage.setItem('bb_slug', barb.slug);
+      localStorage.setItem('bb_nome', barb.nome);
+    }
+    window.location.href = 'painel.html';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

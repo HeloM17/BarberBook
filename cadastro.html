@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cadastro — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .auth-page { min-height: 100vh; display: flex; flex-direction: column; }
+    .auth-hero {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 40px 24px 32px; text-align: center;
+    }
+    .auth-hero__title { font-size: 48px; margin-bottom: 4px; }
+    .auth-hero__title span { color: var(--gold); }
+    .auth-hero__sub { color: var(--text-2); font-size: 14px; }
+    .auth-body { flex: 1; padding: 32px 24px 60px; }
+    .auth-form { display: flex; flex-direction: column; gap: 18px; }
+    .auth-footer { text-align: center; margin-top: 24px; font-size: 14px; color: var(--text-2); }
+    .progress-bar { height: 3px; background: var(--border); border-radius: 3px; margin-bottom: 28px; overflow: hidden; }
+    .progress-bar__fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.4s ease; }
+    .step-section { display: none; }
+    .step-section.active { display: block; animation: pageIn 0.3s ease; }
+    .plan-cards { display: grid; gap: 14px; }
+    .plan-card {
+      border: 2px solid var(--border); border-radius: var(--radius); padding: 18px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .plan-card:hover { border-color: var(--gold); }
+    .plan-card.selected { border-color: var(--gold); background: var(--gold-dim); }
+    .plan-card__name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+    .plan-card__price { color: var(--gold); font-size: 22px; font-weight: 700; }
+    .plan-card__price span { font-size: 13px; color: var(--text-2); font-weight: 400; }
+    .plan-card__features { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+    .plan-card__feat { font-size: 13px; color: var(--text-2); }
+    .plan-card__feat::before { content: '✓ '; color: var(--gold); }
+  </style>
+</head>
+<body class="auth-page">
+
+<nav class="navbar">
+  <a href="../index.html" class="navbar__logo">Barber<span>Book</span></a>
+  <a href="login.html" class="btn btn--ghost btn--sm">Já tenho conta</a>
+</nav>
+
+<div class="auth-hero">
+  <h1 class="auth-hero__title">CRIAR <span>CONTA</span></h1>
+  <p class="auth-hero__sub">Cadastre sua barbearia em menos de 2 minutos</p>
+</div>
+
+<div class="auth-body">
+  <div class="container">
+
+    <!-- STEPS INDICATOR -->
+    <div class="steps" style="margin-bottom:8px;">
+      <div class="step active" id="ind-1">
+        <div class="step__dot">1</div>
+        <span class="step__label">Conta</span>
+      </div>
+      <div class="step" id="ind-2">
+        <div class="step__dot">2</div>
+        <span class="step__label">Barbearia</span>
+      </div>
+      <div class="step" id="ind-3">
+        <div class="step__dot">3</div>
+        <span class="step__label">Pronto</span>
+      </div>
+    </div>
+    <div class="progress-bar" style="margin-bottom:28px;">
+      <div class="progress-bar__fill" id="progressFill" style="width:33%"></div>
+    </div>
+
+    <!-- STEP 1: CONTA -->
+    <div class="step-section active" id="step1">
+      <h2 style="font-size:28px;margin-bottom:6px;">Seus dados de acesso</h2>
+      <p style="color:var(--text-2);font-size:14px;margin-bottom:24px;">Crie seu login para acessar o painel</p>
+      <div class="auth-form">
+        <div class="input-group">
+          <label for="nome">Seu nome completo</label>
+          <input id="nome" class="input" type="text" placeholder="Carlos Silva" autocomplete="name"/>
+        </div>
+        <div class="input-group">
+          <label for="email">E-mail</label>
+          <input id="email" class="input" type="email" placeholder="carlos@email.com" autocomplete="email"/>
+        </div>
+        <div class="input-group">
+          <label for="senha">Senha</label>
+          <input id="senha" class="input" type="password" placeholder="Mínimo 6 caracteres"/>
+        </div>
+        <div class="input-group">
+          <label for="confirma">Confirmar senha</label>
+          <input id="confirma" class="input" type="password" placeholder="Repita a senha"/>
+        </div>
+        <button class="btn btn--primary btn--full" onclick="nextStep(2)">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: BARBEARIA -->
+    <div class="step-section" id="step2">
+      <h2 style="font-size:28px;margin-bottom:6px;">Sua barbearia</h2>
+      <p style="color:var(--text-2);font-size:14px;margin-bottom:24px;">Essas informações aparecem para seus clientes</p>
+      <div class="auth-form">
+        <div class="input-group">
+          <label for="nomeBarbearia">Nome da barbearia</label>
+          <input id="nomeBarbearia" class="input" type="text" placeholder="Barbearia do Carlos" oninput="atualizarSlug(this.value)"/>
+        </div>
+        <div class="input-group">
+          <label>Seu link de agendamento</label>
+          <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--text-2);">
+            barberbook.app/b/<span id="slugPreview" style="color:var(--gold);font-weight:600;">nome-da-barbearia</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="whatsappBarbearia">WhatsApp da barbearia</label>
+          <input id="whatsappBarbearia" class="input" type="tel" placeholder="11999999999"/>
+        </div>
+        <div class="input-group">
+          <label for="endereco">Endereço (opcional)</label>
+          <input id="endereco" class="input" type="text" placeholder="Rua das Flores, 123 — São Paulo"/>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button class="btn btn--ghost btn--full" onclick="nextStep(1)">← Voltar</button>
+          <button class="btn btn--primary btn--full" id="btnCadastrar" onclick="cadastrar()">Cadastrar ✓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: SUCESSO -->
+    <div class="step-section" id="step3" style="text-align:center;padding:32px 0;">
+      <div style="font-size:64px;margin-bottom:16px;">🎉</div>
+      <h2 style="font-size:36px;margin-bottom:8px;">TUDO <span style="color:var(--gold)">CERTO!</span></h2>
+      <p style="color:var(--text-2);margin-bottom:8px;">Sua barbearia foi criada com sucesso.</p>
+      <p style="color:var(--text-2);margin-bottom:32px;font-size:14px;">Agora configure seus serviços e horários para começar a receber agendamentos.</p>
+      <a href="painel.html" class="btn btn--primary btn--full" style="max-width:300px;margin:0 auto;">Ir para o painel →</a>
+    </div>
+
+    <div class="auth-footer" id="authFooter">
+      Já tem uma conta? <a href="login.html">Entrar</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script>
+  let currentStep = 1;
+
+  function nextStep(n) {
+    if (n === 2) {
+      // validate step 1
+      const nome = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+      const confirma = document.getElementById('confirma').value;
+      if (!nome || !email || !senha) return showToast('Preencha todos os campos', 'error');
+      if (senha.length < 6) return showToast('Senha deve ter ao menos 6 caracteres', 'error');
+      if (senha !== confirma) return showToast('As senhas não coincidem', 'error');
+    }
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    document.getElementById(`ind-${currentStep}`).classList.remove('active');
+    document.getElementById(`ind-${currentStep}`).classList.add(n > currentStep ? 'done' : '');
+    currentStep = n;
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    document.getElementById(`ind-${currentStep}`).classList.add('active');
+    const pct = currentStep === 1 ? 33 : currentStep === 2 ? 66 : 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    if (n === 3) document.getElementById('authFooter').style.display = 'none';
+  }
+
+  function atualizarSlug(val) {
+    document.getElementById('slugPreview').textContent = slugify(val) || 'nome-da-barbearia';
+  }
+
+  async function cadastrar() {
+    const nome = document.getElementById('nome').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    const nomeBarbearia = document.getElementById('nomeBarbearia').value.trim();
+    const whatsapp = document.getElementById('whatsappBarbearia').value.trim();
+    const endereco = document.getElementById('endereco').value.trim();
+
+    if (!nomeBarbearia || !whatsapp) return showToast('Preencha nome e WhatsApp da barbearia', 'error');
+
+    const btn = document.getElementById('btnCadastrar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Criando...';
+
+    try {
+      // 1. Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await sb.auth.signUp({ email, password: senha });
+      if (authError) throw authError;
+
+      const slug = slugify(nomeBarbearia);
+
+      // 2. Inserir barbearia na tabela
+      const { error: dbError } = await sb.from('barbearias').insert({
+        user_id: authData.user.id,
+        nome: nomeBarbearia,
+        slug,
+        whatsapp: whatsapp.replace(/\D/g,''),
+        endereco,
+        dono_nome: nome,
+        ativo: true
+      });
+      if (dbError) throw dbError;
+
+      // 3. Salvar slug no localStorage para o painel
+      localStorage.setItem('bb_slug', slug);
+      localStorage.setItem('bb_nome', nomeBarbearia);
+
+      nextStep(3);
+    } catch (err) {
+      showToast(err.message || 'Erro ao cadastrar. Tente novamente.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Cadastrar ✓';
+    }
+  }
+</script>
+</body>
+</html>

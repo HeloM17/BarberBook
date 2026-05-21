@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Serviços — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .main { padding: 20px 20px 100px; max-width: 600px; margin: 0 auto; }
+    .servico-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .servico-card__icon { font-size: 28px; flex-shrink: 0; }
+    .servico-card__info { flex: 1; min-width: 0; }
+    .servico-card__nome { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+    .servico-card__meta { display: flex; gap: 12px; }
+    .servico-card__preco { color: var(--gold); font-weight: 700; }
+    .servico-card__duracao { color: var(--text-2); font-size: 13px; }
+    .servico-card__actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .icon-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; cursor: pointer; transition: all 0.2s; font-size: 14px; }
+    .icon-btn:hover { border-color: var(--gold); }
+    .icon-btn.danger:hover { border-color: var(--danger); background: rgba(224,92,92,0.1); }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+    .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 4px; cursor: pointer; color: var(--muted); font-size: 11px; font-weight: 600; gap: 4px; transition: color 0.2s; text-decoration: none; }
+    .bottom-nav__item.active { color: var(--gold); }
+    .bottom-nav__icon { font-size: 20px; }
+    .fab { position: fixed; bottom: 80px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--gold); border: none; color: #0c0c0c; font-size: 28px; cursor: pointer; box-shadow: 0 4px 20px var(--gold-glow); transition: transform 0.2s; z-index: 99; display: flex; align-items: center; justify-content: center; }
+    .fab:hover { transform: scale(1.08); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="painel.html" class="navbar__logo">Barber<span>Book</span></a>
+  <button class="btn btn--ghost btn--sm" onclick="sair()">Sair</button>
+</nav>
+
+<main class="main page-enter">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-size:36px;">MEUS <span style="color:var(--gold)">SERVIÇOS</span></h1>
+    <p style="color:var(--text-2);font-size:14px;">Seus clientes vão escolher entre esses serviços na hora de agendar.</p>
+  </div>
+  <div id="servicosList">
+    <div style="text-align:center;padding:32px;color:var(--muted);"><span class="spinner"></span></div>
+  </div>
+</main>
+
+<!-- FAB -->
+<button class="fab" onclick="abrirModal()" title="Adicionar serviço">+</button>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="painel.html" class="bottom-nav__item"><span class="bottom-nav__icon">📋</span>Agenda</a>
+  <a href="servicos.html" class="bottom-nav__item active"><span class="bottom-nav__icon">✂️</span>Serviços</a>
+  <a href="horarios.html" class="bottom-nav__item"><span class="bottom-nav__icon">🕐</span>Horários</a>
+  <a href="configuracoes.html" class="bottom-nav__item"><span class="bottom-nav__icon">⚙️</span>Config</a>
+</nav>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModalOutside(event)">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title" id="modalTitle">NOVO SERVIÇO</h2>
+      <button class="modal__close" onclick="fecharModal()">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <input type="hidden" id="editId"/>
+      <div class="input-group">
+        <label>Nome do serviço</label>
+        <input id="sNome" class="input" type="text" placeholder="Ex: Corte de cabelo"/>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label>Preço (R$)</label>
+          <input id="sPreco" class="input" type="number" min="0" step="0.50" placeholder="35.00"/>
+        </div>
+        <div class="input-group">
+          <label>Duração (minutos)</label>
+          <select id="sDuracao" class="input">
+            <option value="30">30 min</option>
+            <option value="60">60 min</option>
+            <option value="90">90 min</option>
+            <option value="120">120 min</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Emoji (opcional)</label>
+        <input id="sEmoji" class="input" type="text" placeholder="✂️" maxlength="4"/>
+      </div>
+      <button class="btn btn--primary btn--full" id="btnSalvar" onclick="salvarServico()">Salvar serviço</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script>
+  let barbeariaId = null;
+  let servicos = [];
+
+  async function init() {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) { window.location.href = 'login.html'; return; }
+    const { data: barb } = await sb.from('barbearias').select('id').eq('user_id', sessionData.session.user.id).single();
+    if (!barb) { window.location.href = 'cadastro.html'; return; }
+    barbeariaId = barb.id;
+    await carregarServicos();
+  }
+
+  async function carregarServicos() {
+    const { data } = await sb.from('servicos').select('*').eq('barbearia_id', barbeariaId).order('criado_em');
+    servicos = data || [];
+    renderServicos();
+  }
+
+  function renderServicos() {
+    const list = document.getElementById('servicosList');
+    if (servicos.length === 0) {
+      list.innerHTML = `<div class="empty"><div class="empty__icon">✂️</div><div class="empty__title">Nenhum serviço ainda</div><div class="empty__desc">Toque no + para adicionar seu primeiro serviço.</div></div>`;
+      return;
+    }
+    list.innerHTML = servicos.map(s => `
+      <div class="servico-card">
+        <div class="servico-card__icon">${s.emoji || '✂️'}</div>
+        <div class="servico-card__info">
+          <div class="servico-card__nome">${s.nome}</div>
+          <div class="servico-card__meta">
+            <span class="servico-card__preco">${formatCurrency(s.preco)}</span>
+            <span class="servico-card__duracao">⏱ ${s.duracao_min} min</span>
+          </div>
+        </div>
+        <div class="servico-card__actions">
+          <button class="icon-btn" onclick="editar('${s.id}')" title="Editar">✏️</button>
+          <button class="icon-btn danger" onclick="excluir('${s.id}')" title="Excluir">🗑️</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function abrirModal(id = null) {
+    document.getElementById('editId').value = id || '';
+    document.getElementById('modalTitle').textContent = id ? 'EDITAR SERVIÇO' : 'NOVO SERVIÇO';
+    if (id) {
+      const s = servicos.find(x => x.id === id);
+      document.getElementById('sNome').value = s.nome;
+      document.getElementById('sPreco').value = s.preco;
+      document.getElementById('sDuracao').value = s.duracao_min;
+      document.getElementById('sEmoji').value = s.emoji || '';
+    } else {
+      document.getElementById('sNome').value = '';
+      document.getElementById('sPreco').value = '';
+      document.getElementById('sDuracao').value = '30';
+      document.getElementById('sEmoji').value = '';
+    }
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function fecharModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+  function fecharModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) fecharModal(); }
+  function editar(id) { abrirModal(id); }
+
+  async function salvarServico() {
+    const id = document.getElementById('editId').value;
+    const nome = document.getElementById('sNome').value.trim();
+    const preco = parseFloat(document.getElementById('sPreco').value);
+    const duracao_min = parseInt(document.getElementById('sDuracao').value);
+    const emoji = document.getElementById('sEmoji').value.trim() || '✂️';
+
+    if (!nome || isNaN(preco)) return showToast('Preencha nome e preço', 'error');
+
+    const btn = document.getElementById('btnSalvar');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+
+    const payload = { barbearia_id: barbeariaId, nome, preco, duracao_min, emoji };
+    let error;
+    if (id) {
+      ({ error } = await sb.from('servicos').update(payload).eq('id', id));
+    } else {
+      ({ error } = await sb.from('servicos').insert(payload));
+    }
+
+    btn.disabled = false; btn.innerHTML = 'Salvar serviço';
+    if (error) return showToast('Erro ao salvar', 'error');
+    showToast(id ? 'Serviço atualizado!' : 'Serviço adicionado!', 'success');
+    fecharModal();
+    await carregarServicos();
+  }
+
+  async function excluir(id) {
+    if (!confirm('Excluir este serviço?')) return;
+    const { error } = await sb.from('servicos').delete().eq('id', id);
+    if (error) return showToast('Erro ao excluir', 'error');
+    showToast('Serviço excluído', 'success');
+    await carregarServicos();
+  }
+
+  async function sair() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+  init();
+</script>
+</body>
+</html>

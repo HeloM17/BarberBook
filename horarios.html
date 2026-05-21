@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Horários — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .main { padding: 20px 20px 100px; max-width: 600px; margin: 0 auto; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; }
+    .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 4px; cursor: pointer; color: var(--muted); font-size: 11px; font-weight: 600; gap: 4px; text-decoration: none; }
+    .bottom-nav__item.active { color: var(--gold); }
+    .bottom-nav__icon { font-size: 20px; }
+    .day-config { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+    .day-config__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .day-config__name { font-weight: 600; font-size: 16px; }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle__track { position: absolute; inset: 0; background: var(--surface3); border-radius: 24px; cursor: pointer; transition: 0.2s; }
+    .toggle input:checked + .toggle__track { background: var(--gold); }
+    .toggle__track::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+    .toggle input:checked + .toggle__track::before { transform: translateX(20px); }
+    .day-config__times { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .day-config__times.hidden { display: none; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="painel.html" class="navbar__logo">Barber<span>Book</span></a>
+  <button class="btn btn--ghost btn--sm" onclick="sair()">Sair</button>
+</nav>
+
+<main class="main page-enter">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-size:36px;">MEUS <span style="color:var(--gold)">HORÁRIOS</span></h1>
+    <p style="color:var(--text-2);font-size:14px;margin-bottom:4px;">Defina em quais dias e horários você atende. Os slots de 30 em 30 minutos são gerados automaticamente.</p>
+  </div>
+
+  <div id="horariosForm">
+    <div style="text-align:center;padding:32px;color:var(--muted);"><span class="spinner"></span></div>
+  </div>
+
+  <button class="btn btn--primary btn--full" id="btnSalvarHorarios" onclick="salvarHorarios()" style="margin-top:8px;">
+    Salvar horários
+  </button>
+</main>
+
+<nav class="bottom-nav">
+  <a href="painel.html" class="bottom-nav__item"><span class="bottom-nav__icon">📋</span>Agenda</a>
+  <a href="servicos.html" class="bottom-nav__item"><span class="bottom-nav__icon">✂️</span>Serviços</a>
+  <a href="horarios.html" class="bottom-nav__item active"><span class="bottom-nav__icon">🕐</span>Horários</a>
+  <a href="configuracoes.html" class="bottom-nav__item"><span class="bottom-nav__icon">⚙️</span>Config</a>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script>
+  let barbeariaId = null;
+  // dia_semana: 0=Dom, 1=Seg... 6=Sáb
+  const DIAS = [
+    { idx: 1, nome: 'Segunda-feira' },
+    { idx: 2, nome: 'Terça-feira' },
+    { idx: 3, nome: 'Quarta-feira' },
+    { idx: 4, nome: 'Quinta-feira' },
+    { idx: 5, nome: 'Sexta-feira' },
+    { idx: 6, nome: 'Sábado' },
+    { idx: 0, nome: 'Domingo' },
+  ];
+  let horariosData = {};
+
+  async function init() {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) { window.location.href = 'login.html'; return; }
+    const { data: barb } = await sb.from('barbearias').select('id').eq('user_id', sessionData.session.user.id).single();
+    if (!barb) { window.location.href = 'cadastro.html'; return; }
+    barbeariaId = barb.id;
+
+    // Buscar horários existentes
+    const { data: hs } = await sb.from('horarios').select('*').eq('barbearia_id', barbeariaId);
+    if (hs) {
+      hs.forEach(h => { horariosData[h.dia_semana] = h; });
+    }
+    renderForm();
+  }
+
+  function renderForm() {
+    const container = document.getElementById('horariosForm');
+    container.innerHTML = DIAS.map(({ idx, nome }) => {
+      const h = horariosData[idx];
+      const ativo = h ? h.ativo : (idx >= 1 && idx <= 6); // seg-sáb ativo por default
+      const inicio = h?.hora_inicio || '08:00';
+      const fim = h?.hora_fim || '18:00';
+      return `
+        <div class="day-config">
+          <div class="day-config__header">
+            <span class="day-config__name">${nome}</span>
+            <label class="toggle">
+              <input type="checkbox" id="ativo_${idx}" ${ativo ? 'checked' : ''} onchange="toggleDia(${idx})"/>
+              <span class="toggle__track"></span>
+            </label>
+          </div>
+          <div class="day-config__times ${ativo ? '' : 'hidden'}" id="times_${idx}">
+            <div class="input-group">
+              <label>Início</label>
+              <input id="inicio_${idx}" class="input" type="time" value="${inicio}"/>
+            </div>
+            <div class="input-group">
+              <label>Fim</label>
+              <input id="fim_${idx}" class="input" type="time" value="${fim}"/>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleDia(idx) {
+    const ativo = document.getElementById(`ativo_${idx}`).checked;
+    const times = document.getElementById(`times_${idx}`);
+    times.classList.toggle('hidden', !ativo);
+  }
+
+  async function salvarHorarios() {
+    const btn = document.getElementById('btnSalvarHorarios');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Salvando...';
+
+    const payload = DIAS.map(({ idx }) => ({
+      barbearia_id: barbeariaId,
+      dia_semana: idx,
+      ativo: document.getElementById(`ativo_${idx}`).checked,
+      hora_inicio: document.getElementById(`inicio_${idx}`)?.value || '08:00',
+      hora_fim: document.getElementById(`fim_${idx}`)?.value || '18:00',
+    }));
+
+    // Upsert por barbearia_id + dia_semana
+    const { error } = await sb.from('horarios').upsert(payload, { onConflict: 'barbearia_id,dia_semana' });
+
+    btn.disabled = false; btn.innerHTML = 'Salvar horários';
+    if (error) return showToast('Erro ao salvar', 'error');
+    showToast('Horários salvos! ✓', 'success');
+  }
+
+  async function sair() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+  init();
+</script>
+</body>
+</html>

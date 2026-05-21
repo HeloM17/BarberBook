@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Confirmado! — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+    .confirm-page { max-width: 420px; width: 100%; text-align: center; animation: pageIn 0.4s ease; }
+    .confirm-page__icon { font-size: 72px; margin-bottom: 16px; animation: popIn 0.5s 0.2s ease both; }
+    @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .confirm-page__title { font-size: 52px; margin-bottom: 8px; }
+    .confirm-page__title span { color: var(--gold); }
+    .confirm-page__sub { color: var(--text-2); font-size: 15px; margin-bottom: 32px; }
+    .confirm-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; text-align: left; margin-bottom: 24px;
+    }
+    .confirm-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .confirm-row:last-child { border-bottom: none; }
+    .confirm-row__label { color: var(--text-2); font-size: 13px; flex-shrink: 0; }
+    .confirm-row__val { font-weight: 600; font-size: 14px; text-align: right; }
+    .confirm-total { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 4px; }
+    .confirm-total__val { font-size: 26px; font-weight: 700; color: var(--gold); }
+    .wpp-btns { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .wpp-btn {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      border-radius: var(--radius); text-decoration: none; font-weight: 600; font-size: 14px;
+      transition: all 0.2s;
+    }
+    .wpp-btn--cliente { background: #25d366; color: #fff; }
+    .wpp-btn--cliente:hover { background: #20bd5a; color: #fff; }
+    .wpp-btn--barbeiro { background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); }
+    .wpp-btn--barbeiro:hover { border-color: var(--gold); color: var(--text); }
+    .wpp-btn__icon { font-size: 22px; }
+    .wpp-btn__text { text-align: left; }
+    .wpp-btn__desc { font-size: 12px; opacity: 0.8; font-weight: 400; }
+    .confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
+  </style>
+</head>
+<body>
+
+<canvas class="confetti" id="confetti"></canvas>
+
+<div class="confirm-page">
+  <div class="confirm-page__icon">🎉</div>
+  <h1 class="confirm-page__title">TUDO <span>CERTO!</span></h1>
+  <p class="confirm-page__sub" id="subMsg">Seu horário está reservado.</p>
+
+  <div class="confirm-card" id="confirmCard">
+    <!-- preenchido pelo JS -->
+  </div>
+
+  <div class="wpp-btns">
+    <a id="btnWppCliente" href="#" target="_blank" class="wpp-btn wpp-btn--cliente">
+      <span class="wpp-btn__icon">💬</span>
+      <div class="wpp-btn__text">
+        Receber confirmação<br>
+        <span class="wpp-btn__desc">Abre o WhatsApp com o resumo do agendamento</span>
+      </div>
+    </a>
+    <a id="btnWppBarbeiro" href="#" target="_blank" class="wpp-btn wpp-btn--barbeiro">
+      <span class="wpp-btn__icon">✂️</span>
+      <div class="wpp-btn__text">
+        Avisar o barbeiro<br>
+        <span class="wpp-btn__desc">Envia os detalhes direto para o barbeiro</span>
+      </div>
+    </a>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin-bottom:20px;">
+    ℹ️ Toque nos botões acima para enviar as mensagens de WhatsApp
+  </p>
+
+  <a id="btnNovo" href="#" class="btn btn--ghost btn--full">← Fazer outro agendamento</a>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const get = k => params.get(k) || '';
+
+  const nome = get('nome');
+  const wpp = get('wpp');
+  const barb = get('barb');
+  const data = get('data');
+  const hora = get('hora');
+  const fim = get('fim');
+  const servicos = get('servicos');
+  const total = parseFloat(get('total') || '0');
+  const wppBarbeiro = get('wppBarbeiro');
+  const msgBarbeiro = get('msgBarbeiro');
+  const msgCliente = get('msgCliente');
+
+  // Card de resumo
+  document.getElementById('confirmCard').innerHTML = `
+    <div class="confirm-row">
+      <span class="confirm-row__label">Nome</span>
+      <span class="confirm-row__val">${nome}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-row__label">Serviço(s)</span>
+      <span class="confirm-row__val">${servicos}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-row__label">Data</span>
+      <span class="confirm-row__val">${data}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-row__label">Horário</span>
+      <span class="confirm-row__val">${hora} → ${fim}</span>
+    </div>
+    <div class="confirm-row">
+      <span class="confirm-row__label">Local</span>
+      <span class="confirm-row__val">${barb}</span>
+    </div>
+    <div class="confirm-total">
+      <span style="color:var(--text-2);font-size:14px;">💰 Total</span>
+      <span class="confirm-total__val">R$ ${total.toFixed(2).replace('.',',')}</span>
+    </div>
+  `;
+
+  // Links WhatsApp
+  document.getElementById('btnWppCliente').href = `https://wa.me/55${wpp}?text=${msgCliente}`;
+  document.getElementById('btnWppBarbeiro').href = `https://wa.me/55${wppBarbeiro}?text=${msgBarbeiro}`;
+
+  // Botão novo agendamento
+  const slugRef = document.referrer.includes('?b=')
+    ? '?' + document.referrer.split('?')[1]
+    : '';
+  document.getElementById('btnNovo').href = `agendar.html${slugRef}`;
+
+  // Confetti simples
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const pieces = Array.from({ length: 80 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height - canvas.height,
+    r: Math.random() * 6 + 3,
+    c: ['#c9a84c','#e2c97e','#4caf82','#fff','#e05c5c'][Math.floor(Math.random() * 5)],
+    s: Math.random() * 2 + 1,
+    a: Math.random() * Math.PI * 2,
+    as: (Math.random() - 0.5) * 0.08
+  }));
+  let frame = 0;
+  function drawConfetti() {
+    if (frame > 180) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.r/2, -p.r/2, p.r, p.r * 0.5);
+      ctx.restore();
+      p.y += p.s; p.a += p.as;
+      if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+    });
+    frame++; requestAnimationFrame(drawConfetti);
+  }
+  drawConfetti();
+</script>
+</body>
+</html>

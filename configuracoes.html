@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Configurações — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .main { padding: 20px 20px 100px; max-width: 600px; margin: 0 auto; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; }
+    .bottom-nav__item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 4px; cursor: pointer; color: var(--muted); font-size: 11px; font-weight: 600; gap: 4px; text-decoration: none; }
+    .bottom-nav__item.active { color: var(--gold); }
+    .bottom-nav__icon { font-size: 20px; }
+    .config-form { display: flex; flex-direction: column; gap: 18px; }
+    .link-preview { background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.25); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; color: var(--text-2); word-break: break-all; }
+    .link-preview span { color: var(--gold); font-weight: 600; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="painel.html" class="navbar__logo">Barber<span>Book</span></a>
+  <button class="btn btn--ghost btn--sm" onclick="sair()">Sair</button>
+</nav>
+
+<main class="main page-enter">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-size:36px;">CONFIGURAÇÕES</h1>
+    <p style="color:var(--text-2);font-size:14px;">Dados da sua barbearia visíveis para os clientes.</p>
+  </div>
+
+  <div id="configForm" class="config-form">
+    <div style="text-align:center;padding:32px;color:var(--muted);"><span class="spinner"></span></div>
+  </div>
+</main>
+
+<nav class="bottom-nav">
+  <a href="painel.html" class="bottom-nav__item"><span class="bottom-nav__icon">📋</span>Agenda</a>
+  <a href="servicos.html" class="bottom-nav__item"><span class="bottom-nav__icon">✂️</span>Serviços</a>
+  <a href="horarios.html" class="bottom-nav__item"><span class="bottom-nav__icon">🕐</span>Horários</a>
+  <a href="configuracoes.html" class="bottom-nav__item active"><span class="bottom-nav__icon">⚙️</span>Config</a>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script>
+  let barbeariaId = null;
+
+  async function init() {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) { window.location.href = 'login.html'; return; }
+    const { data: barb } = await sb.from('barbearias').select('*').eq('user_id', sessionData.session.user.id).single();
+    if (!barb) { window.location.href = 'cadastro.html'; return; }
+    barbeariaId = barb.id;
+    renderForm(barb);
+  }
+
+  function renderForm(b) {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/pages/agendar.html?b=${b.slug}`;
+    document.getElementById('configForm').innerHTML = `
+      <div class="input-group">
+        <label>Nome da barbearia</label>
+        <input id="cNome" class="input" type="text" value="${b.nome || ''}"/>
+      </div>
+      <div class="input-group">
+        <label>WhatsApp (somente números)</label>
+        <input id="cWpp" class="input" type="tel" value="${b.whatsapp || ''}" placeholder="11999999999"/>
+      </div>
+      <div class="input-group">
+        <label>Endereço</label>
+        <input id="cEndereco" class="input" type="text" value="${b.endereco || ''}" placeholder="Rua das Flores, 123"/>
+      </div>
+      <div class="input-group">
+        <label>Seu link de agendamento</label>
+        <div class="link-preview">📲 <span>${link}</span></div>
+        <button class="btn btn--outline btn--sm" style="margin-top:8px;" onclick="copiar('${link}')">Copiar link</button>
+      </div>
+      <div class="input-group">
+        <label>Mensagem de boas-vindas (opcional)</label>
+        <textarea id="cBemvindo" class="input" placeholder="Ex: Seja bem-vindo à Barbearia do Carlos! Escolha seu serviço e horário preferido 😊">${b.mensagem_boas_vindas || ''}</textarea>
+      </div>
+      <button class="btn btn--primary btn--full" id="btnSalvar" onclick="salvar()">Salvar alterações</button>
+      <hr class="divider"/>
+      <button class="btn btn--ghost btn--full" onclick="sair()">🚪 Sair da conta</button>
+    `;
+  }
+
+  async function salvar() {
+    const nome = document.getElementById('cNome').value.trim();
+    const whatsapp = document.getElementById('cWpp').value.replace(/\D/g,'');
+    const endereco = document.getElementById('cEndereco').value.trim();
+    const mensagem_boas_vindas = document.getElementById('cBemvindo').value.trim();
+
+    if (!nome || !whatsapp) return showToast('Nome e WhatsApp são obrigatórios', 'error');
+
+    const btn = document.getElementById('btnSalvar');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Salvando...';
+
+    const { error } = await sb.from('barbearias').update({ nome, whatsapp, endereco, mensagem_boas_vindas }).eq('id', barbeariaId);
+
+    btn.disabled = false; btn.innerHTML = 'Salvar alterações';
+    if (error) return showToast('Erro ao salvar', 'error');
+    showToast('Configurações salvas! ✓', 'success');
+  }
+
+  function copiar(link) {
+    navigator.clipboard.writeText(link).then(() => showToast('Link copiado! 🔗', 'success'));
+  }
+
+  async function sair() { await sb.auth.signOut(); window.location.href = 'login.html'; }
+  init();
+</script>
+</body>
+</html>

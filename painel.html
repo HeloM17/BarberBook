@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .painel-layout { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* BOTTOM NAV mobile */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav__item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 10px 4px; cursor: pointer; color: var(--muted);
+      font-size: 11px; font-weight: 600; gap: 4px; transition: color 0.2s;
+      text-decoration: none;
+    }
+    .bottom-nav__item.active { color: var(--gold); }
+    .bottom-nav__icon { font-size: 20px; }
+
+    /* MAIN */
+    .main { flex: 1; padding: 20px 20px 90px; max-width: 600px; margin: 0 auto; width: 100%; }
+
+    /* HEADER */
+    .painel-header { margin-bottom: 24px; }
+    .painel-header__greeting { font-size: 14px; color: var(--text-2); margin-bottom: 2px; }
+    .painel-header__title { font-size: 32px; }
+    .painel-header__title span { color: var(--gold); }
+
+    /* LINK CARD */
+    .link-card {
+      background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.25);
+      border-radius: var(--radius); padding: 14px 16px; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .link-card__icon { font-size: 22px; flex-shrink: 0; }
+    .link-card__text { flex: 1; min-width: 0; }
+    .link-card__label { font-size: 11px; color: var(--gold); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+    .link-card__url { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .link-card__btn { background: var(--gold); color: #0c0c0c; border: none; border-radius: var(--radius-sm); padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+
+    /* DAY SELECTOR */
+    .day-selector { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 20px; scrollbar-width: none; }
+    .day-selector::-webkit-scrollbar { display: none; }
+    .day-btn {
+      flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+      padding: 10px 14px; border-radius: var(--radius); border: 1.5px solid var(--border);
+      background: var(--surface); cursor: pointer; transition: all 0.2s; color: var(--text);
+    }
+    .day-btn.active { border-color: var(--gold); background: var(--gold-dim); color: var(--gold); }
+    .day-btn__name { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+    .day-btn__num { font-family: 'Bebas Neue', sans-serif; font-size: 22px; line-height: 1; }
+
+    /* AGENDA LIST */
+    .agenda-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .agenda-item__time {
+      background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.2);
+      border-radius: var(--radius-sm); padding: 8px 10px; text-align: center;
+      flex-shrink: 0; min-width: 56px;
+    }
+    .agenda-item__time-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--gold); line-height: 1; }
+    .agenda-item__time-end { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .agenda-item__info { flex: 1; min-width: 0; }
+    .agenda-item__name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+    .agenda-item__service { font-size: 13px; color: var(--text-2); margin-bottom: 6px; }
+    .agenda-item__meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .agenda-item__wpp { font-size: 12px; color: var(--text-2); }
+    .agenda-item__valor { font-weight: 700; color: var(--gold); font-size: 14px; }
+    .agenda-item__cancel { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; margin-left: auto; padding: 4px; transition: color 0.2s; }
+    .agenda-item__cancel:hover { color: var(--danger); }
+
+    /* STATS */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
+    .stat-card__val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--gold); line-height: 1; }
+    .stat-card__label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* SECTION HEADER */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .section-header h3 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.04em; }
+  </style>
+</head>
+<body class="painel-layout">
+
+<nav class="navbar">
+  <span class="navbar__logo">Barber<span>Book</span></span>
+  <div style="display:flex;gap:8px;">
+    <span id="navNome" style="color:var(--text-2);font-size:13px;align-self:center;"></span>
+    <button class="btn btn--ghost btn--sm" onclick="sair()">Sair</button>
+  </div>
+</nav>
+
+<main class="main page-enter">
+
+  <!-- HEADER -->
+  <div class="painel-header">
+    <div class="painel-header__greeting" id="greeting">Bom dia 👋</div>
+    <h1 class="painel-header__title">MINHA <span>AGENDA</span></h1>
+  </div>
+
+  <!-- LINK DA BARBEARIA -->
+  <div class="link-card">
+    <div class="link-card__icon">🔗</div>
+    <div class="link-card__text">
+      <div class="link-card__label">Seu link de agendamento</div>
+      <div class="link-card__url" id="linkBarbearia">carregando...</div>
+    </div>
+    <button class="link-card__btn" onclick="copiarLink()">Copiar</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-card__val" id="statHoje">0</div>
+      <div class="stat-card__label">Hoje</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__val" id="statSemana">0</div>
+      <div class="stat-card__label">Esta semana</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__val" id="statFaturamento">R$0</div>
+      <div class="stat-card__label">Faturamento hoje</div>
+    </div>
+  </div>
+
+  <!-- SELETOR DE DIA -->
+  <div class="section-header">
+    <h3>AGENDAMENTOS</h3>
+  </div>
+  <div class="day-selector" id="daySelector"></div>
+
+  <!-- LISTA -->
+  <div id="agendaList">
+    <div style="text-align:center;padding:32px;color:var(--muted);">
+      <span class="spinner"></span>
+    </div>
+  </div>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="painel.html" class="bottom-nav__item active">
+    <span class="bottom-nav__icon">📋</span>Agenda
+  </a>
+  <a href="servicos.html" class="bottom-nav__item">
+    <span class="bottom-nav__icon">✂️</span>Serviços
+  </a>
+  <a href="horarios.html" class="bottom-nav__item">
+    <span class="bottom-nav__icon">🕐</span>Horários
+  </a>
+  <a href="configuracoes.html" class="bottom-nav__item">
+    <span class="bottom-nav__icon">⚙️</span>Config
+  </a>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script>
+  let barbeariaId = null;
+  let slug = '';
+  let selectedDate = '';
+  let agendamentos = [];
+
+  async function init() {
+    const { data: sessionData } = await sb.auth.getSession();
+    if (!sessionData.session) { window.location.href = 'login.html'; return; }
+
+    // Greeting
+    const h = new Date().getHours();
+    document.getElementById('greeting').textContent =
+      h < 12 ? 'Bom dia 👋' : h < 18 ? 'Boa tarde 👋' : 'Boa noite 👋';
+
+    // Buscar barbearia
+    const { data: barb } = await sb.from('barbearias')
+      .select('*').eq('user_id', sessionData.session.user.id).single();
+    if (!barb) { window.location.href = 'cadastro.html'; return; }
+
+    barbeariaId = barb.id;
+    slug = barb.slug;
+    document.getElementById('navNome').textContent = barb.nome;
+    const link = `${location.origin.replace('/pages','')}/pages/agendar.html?b=${slug}`;
+    document.getElementById('linkBarbearia').textContent = link;
+
+    renderDays();
+    await carregarAgendamentos();
+    calcularStats();
+  }
+
+  function renderDays() {
+    const container = document.getElementById('daySelector');
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      const btn = document.createElement('button');
+      btn.className = 'day-btn' + (i === 0 ? ' active' : '');
+      btn.dataset.date = dateStr;
+      btn.innerHTML = `<span class="day-btn__name">${DIAS_SEMANA_SHORT[d.getDay()]}</span><span class="day-btn__num">${d.getDate()}</span>`;
+      btn.onclick = () => selectDay(dateStr, btn);
+      if (i === 0) selectedDate = dateStr;
+      container.appendChild(btn);
+    }
+  }
+
+  function selectDay(date, btn) {
+    selectedDate = date;
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAgenda();
+  }
+
+  async function carregarAgendamentos() {
+    const semanaInicio = new Date(); semanaInicio.setDate(semanaInicio.getDate() - 1);
+    const semanaFim = new Date(); semanaFim.setDate(semanaFim.getDate() + 7);
+
+    const { data } = await sb.from('agendamentos')
+      .select('*')
+      .eq('barbearia_id', barbeariaId)
+      .eq('status', 'ativo')
+      .gte('data', semanaInicio.toISOString().split('T')[0])
+      .lte('data', semanaFim.toISOString().split('T')[0])
+      .order('data').order('hora');
+
+    agendamentos = data || [];
+    renderAgenda();
+  }
+
+  function renderAgenda() {
+    const list = document.getElementById('agendaList');
+    const do_dia = agendamentos.filter(a => a.data === selectedDate);
+
+    if (do_dia.length === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty__icon">📅</div>
+          <div class="empty__title">Nenhum agendamento</div>
+          <div class="empty__desc">Nada marcado para este dia ainda.</div>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = do_dia.map(a => {
+      const servicos = Array.isArray(a.servicos) ? a.servicos : JSON.parse(a.servicos || '[]');
+      const nomeServs = servicos.map(s => s.nome).join(' + ');
+      const [hh, mm] = a.hora.split(':');
+      const totalMin = servicos.reduce((acc, s) => acc + (s.duracao_min || 30), 0);
+      const fimDate = new Date(2000, 0, 1, +hh, +mm + totalMin);
+      const fim = `${String(fimDate.getHours()).padStart(2,'0')}:${String(fimDate.getMinutes()).padStart(2,'0')}`;
+
+      return `
+        <div class="agenda-item">
+          <div class="agenda-item__time">
+            <div class="agenda-item__time-val">${hh}:${mm}</div>
+            <div class="agenda-item__time-end">até ${fim}</div>
+          </div>
+          <div class="agenda-item__info">
+            <div class="agenda-item__name">${a.cliente_nome}</div>
+            <div class="agenda-item__service">${nomeServs}</div>
+            <div class="agenda-item__meta">
+              <span class="agenda-item__wpp">📱 ${formatPhone(a.cliente_whatsapp)}</span>
+              <span class="agenda-item__valor">${formatCurrency(a.valor_total)}</span>
+              <button class="agenda-item__cancel" onclick="cancelar('${a.id}')">✕ Cancelar</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function calcularStats() {
+    const hoje = new Date().toISOString().split('T')[0];
+    const do_dia = agendamentos.filter(a => a.data === hoje);
+    const da_semana = agendamentos;
+    const fat = do_dia.reduce((acc, a) => acc + (a.valor_total || 0), 0);
+
+    document.getElementById('statHoje').textContent = do_dia.length;
+    document.getElementById('statSemana').textContent = da_semana.length;
+    document.getElementById('statFaturamento').textContent = `R$${fat.toFixed(0)}`;
+  }
+
+  async function cancelar(id) {
+    if (!confirm('Cancelar este agendamento?')) return;
+    const { error } = await sb.from('agendamentos').update({ status: 'cancelado' }).eq('id', id);
+    if (error) return showToast('Erro ao cancelar', 'error');
+    showToast('Agendamento cancelado', 'success');
+    await carregarAgendamentos();
+    calcularStats();
+  }
+
+  function copiarLink() {
+    const link = document.getElementById('linkBarbearia').textContent;
+    navigator.clipboard.writeText(link).then(() => showToast('Link copiado! 🔗', 'success'));
+  }
+
+  async function sair() {
+    await sb.auth.signOut();
+    localStorage.removeItem('bb_slug');
+    localStorage.removeItem('bb_nome');
+    window.location.href = 'login.html';
+  }
+
+  init();
+</script>
+</body>
+</html>

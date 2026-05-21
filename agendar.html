@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Agendar — BarberBook</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    body { background: var(--bg); }
+
+    /* BARBEARIA HEADER */
+    .barb-header {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 20px 20px;
+      text-align: center;
+    }
+    .barb-header__icon { font-size: 48px; margin-bottom: 8px; }
+    .barb-header__nome { font-size: 36px; margin-bottom: 4px; }
+    .barb-header__info { color: var(--text-2); font-size: 13px; }
+    .barb-header__bv { color: var(--text-2); font-size: 14px; margin-top: 8px; max-width: 340px; margin-left: auto; margin-right: auto; }
+
+    /* STEPPER */
+    .stepper-wrap { padding: 20px 20px 0; max-width: 480px; margin: 0 auto; }
+
+    /* STEP PANELS */
+    .step-panel { display: none; padding: 20px; max-width: 480px; margin: 0 auto; }
+    .step-panel.active { display: block; animation: pageIn 0.3s ease; }
+    .step-title { font-size: 28px; margin-bottom: 6px; }
+    .step-subtitle { color: var(--text-2); font-size: 14px; margin-bottom: 20px; }
+
+    /* SERVIÇOS GRID */
+    .servicos-grid { display: flex; flex-direction: column; gap: 10px; }
+    .servico-item {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px; cursor: pointer;
+      transition: all 0.2s; user-select: none;
+    }
+    .servico-item.selected { border-color: var(--gold); background: var(--gold-dim); }
+    .servico-item__icon { font-size: 24px; flex-shrink: 0; }
+    .servico-item__info { flex: 1; }
+    .servico-item__nome { font-weight: 600; margin-bottom: 2px; }
+    .servico-item__meta { font-size: 13px; color: var(--text-2); }
+    .servico-item__check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+    .servico-item.selected .servico-item__check { background: var(--gold); border-color: var(--gold); color: #0c0c0c; }
+
+    /* RESUMO BAR */
+    .resumo-bar {
+      position: sticky; bottom: 0; background: var(--surface);
+      border-top: 1px solid var(--border); padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .resumo-bar__info { flex: 1; }
+    .resumo-bar__count { font-size: 12px; color: var(--text-2); }
+    .resumo-bar__total { font-size: 20px; font-weight: 700; color: var(--gold); }
+    .resumo-bar__duracao { font-size: 12px; color: var(--muted); }
+
+    /* CALENDÁRIO */
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; }
+    .cal-day-name { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); padding: 4px 0; }
+    .cal-day {
+      aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm); font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s; border: 1.5px solid transparent;
+    }
+    .cal-day:hover:not(.disabled):not(.selected) { border-color: var(--gold); }
+    .cal-day.selected { background: var(--gold); color: #0c0c0c; font-weight: 700; }
+    .cal-day.today { border-color: var(--gold); color: var(--gold); }
+    .cal-day.today.selected { color: #0c0c0c; }
+    .cal-day.disabled { color: var(--muted); cursor: not-allowed; opacity: 0.4; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .cal-nav__title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.04em; }
+    .cal-nav__btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
+    .cal-nav__btn:hover { border-color: var(--gold); }
+
+    /* SLOTS */
+    .slots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .slot-btn {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 4px;
+      text-align: center; font-size: 14px; font-weight: 600; color: var(--text);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .slot-btn:hover { border-color: var(--gold); background: var(--gold-dim); }
+    .slot-btn.selected { background: var(--gold); color: #0c0c0c; border-color: var(--gold); }
+
+    /* DADOS */
+    .dados-form { display: flex; flex-direction: column; gap: 16px; }
+
+    /* CONFIRMAÇÃO */
+    .confirm-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    }
+    .confirm-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .confirm-row:last-child { border-bottom: none; }
+    .confirm-row__label { color: var(--text-2); font-size: 14px; }
+    .confirm-row__val { font-weight: 600; text-align: right; }
+    .confirm-total { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; }
+    .confirm-total__label { font-size: 16px; font-weight: 600; }
+    .confirm-total__val { font-size: 24px; font-weight: 700; color: var(--gold); }
+  </style>
+</head>
+<body>
+
+<!-- BARBEARIA HEADER -->
+<div class="barb-header" id="barbHeader">
+  <div class="barb-header__icon">✂️</div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+    <span class="spinner"></span>
+    <span style="color:var(--text-2);font-size:14px;">Carregando...</span>
+  </div>
+</div>
+
+<!-- STEPPER -->
+<div class="stepper-wrap">
+  <div class="steps">
+    <div class="step active" id="ind-1">
+      <div class="step__dot">1</div>
+      <span class="step__label">Serviços</span>
+    </div>
+    <div class="step" id="ind-2">
+      <div class="step__dot">2</div>
+      <span class="step__label">Data & Hora</span>
+    </div>
+    <div class="step" id="ind-3">
+      <div class="step__dot">3</div>
+      <span class="step__label">Confirmar</span>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 1: SERVIÇOS -->
+<div class="step-panel active" id="s1">
+  <h2 class="step-title">ESCOLHA O <span style="color:var(--gold)">SERVIÇO</span></h2>
+  <p class="step-subtitle">Selecione um ou mais serviços</p>
+  <div class="servicos-grid" id="servicosGrid">
+    <div style="text-align:center;padding:32px;color:var(--muted);"><span class="spinner"></span></div>
+  </div>
+</div>
+
+<!-- STEP 2: DATA E HORA -->
+<div class="step-panel" id="s2">
+  <h2 class="step-title">QUANDO <span style="color:var(--gold)">VOCÊ VEM?</span></h2>
+  <p class="step-subtitle">Escolha o dia e horário</p>
+  <!-- CALENDÁRIO -->
+  <div class="cal-nav">
+    <button class="cal-nav__btn" onclick="mudaMes(-1)">‹</button>
+    <span class="cal-nav__title" id="calTitle"></span>
+    <button class="cal-nav__btn" onclick="mudaMes(1)">›</button>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <hr class="divider" style="margin:20px 0 16px;">
+  <div id="slotsSection" style="display:none;">
+    <h3 style="font-size:18px;margin-bottom:12px;">Horários disponíveis</h3>
+    <div class="slots-grid" id="slotsGrid"></div>
+    <div id="semSlots" style="display:none;" class="empty">
+      <div class="empty__icon">😕</div>
+      <div class="empty__title">Sem horários disponíveis</div>
+      <div class="empty__desc">Tente outro dia.</div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3: DADOS + CONFIRMAÇÃO -->
+<div class="step-panel" id="s3">
+  <h2 class="step-title">SEUS <span style="color:var(--gold)">DADOS</span></h2>
+  <p class="step-subtitle">Quase pronto! Confirme suas informações</p>
+
+  <!-- RESUMO -->
+  <div class="confirm-box" id="resumoBox"></div>
+
+  <div class="dados-form">
+    <div class="input-group">
+      <label>Seu nome</label>
+      <input id="cliNome" class="input" type="text" placeholder="João Silva" autocomplete="name"/>
+    </div>
+    <div class="input-group">
+      <label>Seu WhatsApp</label>
+      <input id="cliWpp" class="input" type="tel" placeholder="11999999999" autocomplete="tel"/>
+    </div>
+    <button class="btn btn--primary btn--full" id="btnConfirmar" onclick="confirmarAgendamento()">
+      ✅ Confirmar agendamento
+    </button>
+  </div>
+</div>
+
+<!-- RESUMO BAR (sticky) -->
+<div class="resumo-bar" id="resumoBar" style="display:none;">
+  <div class="resumo-bar__info">
+    <div class="resumo-bar__count" id="rbCount">0 serviços</div>
+    <div class="resumo-bar__total" id="rbTotal">R$ 0,00</div>
+    <div class="resumo-bar__duracao" id="rbDur">0 min</div>
+  </div>
+  <button class="btn btn--primary" id="btnProximo" onclick="proximoPasso()">Continuar →</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script>
+  // ---- STATE ----
+  let barbearia = null;
+  let servicos = [];
+  let horarios = [];
+  let agendados = []; // slots já ocupados no período
+  let selectedServicos = [];
+  let selectedDate = null;
+  let selectedSlot = null;
+  let currentStep = 1;
+  let calViewDate = new Date();
+
+  // ---- INIT ----
+  async function init() {
+    const params = new URLSearchParams(location.search);
+    const slug = params.get('b');
+    if (!slug) { document.getElementById('barbHeader').innerHTML = '<p style="color:var(--danger);padding:20px;">Link inválido.</p>'; return; }
+
+    // Busca dados da barbearia
+    const { data: barb } = await sb.from('barbearias').select('*').eq('slug', slug).single();
+    if (!barb) { document.getElementById('barbHeader').innerHTML = '<p style="color:var(--danger);padding:20px;">Barbearia não encontrada.</p>'; return; }
+    barbearia = barb;
+
+    // Header
+    document.title = `Agendar — ${barb.nome}`;
+    document.getElementById('barbHeader').innerHTML = `
+      <div class="barb-header__icon">✂️</div>
+      <h1 class="barb-header__nome">${barb.nome}</h1>
+      ${barb.endereco ? `<div class="barb-header__info">📍 ${barb.endereco}</div>` : ''}
+      ${barb.mensagem_boas_vindas ? `<div class="barb-header__bv">${barb.mensagem_boas_vindas}</div>` : ''}
+    `;
+
+    // Busca serviços e horários
+    const [{ data: servs }, { data: hors }] = await Promise.all([
+      sb.from('servicos').select('*').eq('barbearia_id', barb.id).order('criado_em'),
+      sb.from('horarios').select('*').eq('barbearia_id', barb.id).eq('ativo', true),
+    ]);
+    servicos = servs || [];
+    horarios = hors || [];
+
+    renderServicos();
+    renderCalendario();
+  }
+
+  // ---- STEP NAVIGATION ----
+  function goStep(n) {
+    document.getElementById(`s${currentStep}`).classList.remove('active');
+    document.getElementById(`ind-${currentStep}`).classList.remove('active');
+    document.getElementById(`ind-${currentStep}`).classList.add('done');
+    currentStep = n;
+    document.getElementById(`s${currentStep}`).classList.add('active');
+    document.getElementById(`ind-${currentStep}`).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (n === 3) {
+      document.getElementById('resumoBar').style.display = 'none';
+      renderResumo();
+    }
+  }
+
+  function proximoPasso() {
+    if (currentStep === 1) {
+      if (selectedServicos.length === 0) return showToast('Selecione ao menos 1 serviço', 'error');
+      goStep(2);
+    } else if (currentStep === 2) {
+      if (!selectedDate) return showToast('Escolha um dia', 'error');
+      if (!selectedSlot) return showToast('Escolha um horário', 'error');
+      goStep(3);
+    }
+  }
+
+  // ---- STEP 1: SERVIÇOS ----
+  function renderServicos() {
+    const grid = document.getElementById('servicosGrid');
+    if (servicos.length === 0) {
+      grid.innerHTML = '<div class="empty"><div class="empty__icon">✂️</div><div class="empty__title">Nenhum serviço disponível</div></div>';
+      return;
+    }
+    grid.innerHTML = servicos.map(s => `
+      <div class="servico-item" id="si_${s.id}" onclick="toggleServico('${s.id}')">
+        <div class="servico-item__icon">${s.emoji || '✂️'}</div>
+        <div class="servico-item__info">
+          <div class="servico-item__nome">${s.nome}</div>
+          <div class="servico-item__meta">${formatCurrency(s.preco)} · ${s.duracao_min} min</div>
+        </div>
+        <div class="servico-item__check" id="chk_${s.id}">✓</div>
+      </div>`).join('');
+    atualizarResumoBar();
+  }
+
+  function toggleServico(id) {
+    const idx = selectedServicos.findIndex(s => s.id === id);
+    const item = document.getElementById(`si_${id}`);
+    if (idx >= 0) {
+      selectedServicos.splice(idx, 1);
+      item.classList.remove('selected');
+    } else {
+      const s = servicos.find(s => s.id === id);
+      selectedServicos.push(s);
+      item.classList.add('selected');
+    }
+    atualizarResumoBar();
+  }
+
+  function atualizarResumoBar() {
+    const bar = document.getElementById('resumoBar');
+    if (selectedServicos.length === 0) { bar.style.display = 'none'; return; }
+    bar.style.display = 'flex';
+    const total = selectedServicos.reduce((a, s) => a + s.preco, 0);
+    const dur = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    document.getElementById('rbCount').textContent = `${selectedServicos.length} serviço(s)`;
+    document.getElementById('rbTotal').textContent = formatCurrency(total);
+    document.getElementById('rbDur').textContent = `⏱ ${dur} min`;
+  }
+
+  // ---- STEP 2: CALENDÁRIO ----
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  function mudaMes(delta) {
+    calViewDate.setMonth(calViewDate.getMonth() + delta);
+    renderCalendario();
+  }
+
+  function renderCalendario() {
+    const y = calViewDate.getFullYear();
+    const m = calViewDate.getMonth();
+    document.getElementById('calTitle').textContent = `${MESES[m]} ${y}`;
+
+    const grid = document.getElementById('calGrid');
+    // Nomes dos dias
+    const nomes = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    let html = nomes.map(n => `<div class="cal-day-name">${n}</div>`).join('');
+
+    const firstDay = new Date(y, m, 1).getDay();
+    const daysInMonth = new Date(y, m+1, 0).getDate();
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Espaços em branco antes do dia 1
+    for (let i = 0; i < firstDay; i++) html += `<div></div>`;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(y, m, d);
+      const dateStr = date.toISOString().split('T')[0];
+      const diaSemana = date.getDay();
+      const passado = date < today;
+      const semHorario = !horarios.find(h => h.dia_semana === diaSemana);
+      const disabled = passado || semHorario;
+      const isToday = date.getTime() === today.getTime();
+      const isSel = selectedDate === dateStr;
+
+      html += `<div class="cal-day ${disabled ? 'disabled' : ''} ${isToday ? 'today' : ''} ${isSel ? 'selected' : ''}"
+        onclick="${disabled ? '' : `selecionarDia('${dateStr}', ${diaSemana})`}">${d}</div>`;
+    }
+    grid.innerHTML = html;
+  }
+
+  async function selecionarDia(dateStr, diaSemana) {
+    selectedDate = dateStr;
+    selectedSlot = null;
+    renderCalendario();
+
+    // Buscar agendamentos do dia
+    const { data: ags } = await sb.from('agendamentos')
+      .select('hora, servicos')
+      .eq('barbearia_id', barbearia.id)
+      .eq('data', dateStr)
+      .eq('status', 'ativo');
+
+    agendados = ags || [];
+    renderSlots(diaSemana);
+    document.getElementById('slotsSection').style.display = 'block';
+    document.getElementById('resumoBar').style.display = selectedServicos.length > 0 ? 'flex' : 'none';
+  }
+
+  function renderSlots(diaSemana) {
+    const horario = horarios.find(h => h.dia_semana === diaSemana);
+    const grid = document.getElementById('slotsGrid');
+    const semSlots = document.getElementById('semSlots');
+
+    if (!horario) { grid.innerHTML = ''; semSlots.style.display = 'block'; return; }
+
+    // Gerar todos os slots de 30 em 30 min
+    const [hIni, mIni] = horario.hora_inicio.split(':').map(Number);
+    const [hFim, mFim] = horario.hora_fim.split(':').map(Number);
+    const inicio = hIni * 60 + mIni;
+    const fim = hFim * 60 + mFim;
+
+    // Calcular slots bloqueados pelos agendamentos
+    const bloqueados = new Set();
+    agendados.forEach(ag => {
+      const [h, min] = ag.hora.split(':').map(Number);
+      const start = h * 60 + min;
+      const servs = Array.isArray(ag.servicos) ? ag.servicos : JSON.parse(ag.servicos || '[]');
+      const dur = servs.reduce((a, s) => a + (s.duracao_min || 30), 0);
+      const slotsNecessarios = Math.ceil(dur / 30);
+      for (let i = 0; i < slotsNecessarios; i++) bloqueados.add(start + i * 30);
+    });
+
+    // Calcular quantos slots o cliente precisa
+    const durTotal = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    const slotsNecessarios = Math.ceil(durTotal / 30);
+
+    const slots = [];
+    for (let t = inicio; t + slotsNecessarios * 30 <= fim; t += 30) {
+      // Verificar se todos os slots necessários estão livres
+      let livre = true;
+      for (let i = 0; i < slotsNecessarios; i++) {
+        if (bloqueados.has(t + i * 30)) { livre = false; break; }
+      }
+      if (livre) slots.push(t);
+    }
+
+    if (slots.length === 0) {
+      grid.innerHTML = '';
+      semSlots.style.display = 'block';
+      return;
+    }
+    semSlots.style.display = 'none';
+
+    grid.innerHTML = slots.map(t => {
+      const hh = String(Math.floor(t / 60)).padStart(2, '0');
+      const mm = String(t % 60).padStart(2, '0');
+      const slotStr = `${hh}:${mm}`;
+      return `<div class="slot-btn ${selectedSlot === slotStr ? 'selected' : ''}" onclick="selecionarSlot('${slotStr}', this)">${slotStr}</div>`;
+    }).join('');
+  }
+
+  function selecionarSlot(slot, el) {
+    selectedSlot = slot;
+    document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // ---- STEP 3: RESUMO E CONFIRMAÇÃO ----
+  function renderResumo() {
+    const total = selectedServicos.reduce((a, s) => a + s.preco, 0);
+    const dur = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    const [hh, mm] = selectedSlot.split(':').map(Number);
+    const fimDate = new Date(2000, 0, 1, hh, mm + dur);
+    const fim = `${String(fimDate.getHours()).padStart(2,'0')}:${String(fimDate.getMinutes()).padStart(2,'0')}`;
+    const [y, m, d] = selectedDate.split('-');
+
+    document.getElementById('resumoBox').innerHTML = `
+      <div class="confirm-row">
+        <span class="confirm-row__label">Serviço(s)</span>
+        <span class="confirm-row__val">${selectedServicos.map(s => s.nome).join(' + ')}</span>
+      </div>
+      <div class="confirm-row">
+        <span class="confirm-row__label">Data</span>
+        <span class="confirm-row__val">${d}/${m}/${y}</span>
+      </div>
+      <div class="confirm-row">
+        <span class="confirm-row__label">Horário</span>
+        <span class="confirm-row__val">${selectedSlot} → ${fim}</span>
+      </div>
+      <div class="confirm-row">
+        <span class="confirm-row__label">Duração total</span>
+        <span class="confirm-row__val">${dur} minutos</span>
+      </div>
+      <div class="confirm-total">
+        <span class="confirm-total__label">💰 Total</span>
+        <span class="confirm-total__val">${formatCurrency(total)}</span>
+      </div>
+    `;
+  }
+
+  async function confirmarAgendamento() {
+    const nome = document.getElementById('cliNome').value.trim();
+    const wpp = document.getElementById('cliWpp').value.replace(/\D/g,'');
+    if (!nome || !wpp) return showToast('Preencha seu nome e WhatsApp', 'error');
+    if (wpp.length < 10) return showToast('WhatsApp inválido', 'error');
+
+    const btn = document.getElementById('btnConfirmar');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Confirmando...';
+
+    const total = selectedServicos.reduce((a, s) => a + s.preco, 0);
+    const servPayload = selectedServicos.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao_min: s.duracao_min }));
+
+    const { error } = await sb.from('agendamentos').insert({
+      barbearia_id: barbearia.id,
+      cliente_nome: nome,
+      cliente_whatsapp: wpp,
+      servicos: servPayload,
+      data: selectedDate,
+      hora: selectedSlot,
+      valor_total: total,
+      status: 'ativo'
+    });
+
+    if (error) {
+      btn.disabled = false; btn.innerHTML = '✅ Confirmar agendamento';
+      return showToast('Erro ao agendar. Tente novamente.', 'error');
+    }
+
+    // Enviar WhatsApp para o BARBEIRO
+    const [y, m, d] = selectedDate.split('-');
+    const dur = selectedServicos.reduce((a, s) => a + s.duracao_min, 0);
+    const [hh2, mm2] = selectedSlot.split(':').map(Number);
+    const fimDate = new Date(2000, 0, 1, hh2, mm2 + dur);
+    const fim = `${String(fimDate.getHours()).padStart(2,'0')}:${String(fimDate.getMinutes()).padStart(2,'0')}`;
+
+    const msgBarbeiro = encodeURIComponent(
+`📅 Novo agendamento!
+👤 ${nome}
+📱 ${formatPhone(wpp)}
+✂️ ${selectedServicos.map(s => s.nome).join(' + ')}
+📆 ${d}/${m}/${y} às ${selectedSlot} → ${fim}
+💰 ${formatCurrency(total)}`
+    );
+
+    const msgCliente = encodeURIComponent(
+`Olá, ${nome}! 😊 Seu agendamento está confirmado!
+✂️ ${selectedServicos.map(s => s.nome).join(' + ')}
+📆 ${d}/${m}/${y} às ${selectedSlot} → ${fim}
+📍 ${barbearia.nome}${barbearia.endereco ? '\n📍 ' + barbearia.endereco : ''}
+💰 Total: ${formatCurrency(total)}
+Qualquer dúvida, fala com a gente! 👋`
+    );
+
+    // Redireciona para confirmação passando dados na URL
+    const params = new URLSearchParams({
+      nome, wpp, barb: barbearia.nome, data: `${d}/${m}/${y}`,
+      hora: selectedSlot, fim, servicos: selectedServicos.map(s => s.nome).join(', '),
+      total: total.toFixed(2),
+      wppBarbeiro: barbearia.whatsapp,
+      msgBarbeiro, msgCliente
+    });
+    window.location.href = `confirmacao.html?${params.toString()}`;
+  }
+
+  init();
+</script>
+</body>
+</html>
