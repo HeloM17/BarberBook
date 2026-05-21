@@ -188,7 +188,7 @@
     barbeariaId = barb.id;
     slug = barb.slug;
     document.getElementById('navNome').textContent = barb.nome;
-    const link = `${location.origin.replace('/pages','')}/pages/agendar.html?b=${slug}`;
+    const link = `${location.origin}/${location.pathname.split('/')[1]}/pages/agendar.html?b=${slug}`;
     document.getElementById('linkBarbearia').textContent = link;
 
     renderDays();
